@@ -11,6 +11,18 @@ return function()
         expect(state.draft.getRef).to.be.a("function")
     end)
 
+    describe("state.draft.isDraft", function()
+        it("should determine if a table is a draft", function()
+            local nonDraftTable = {}
+
+            state.produce(nonDraftTable, function(draftTable)
+                expect(state.draft.isDraft(draftTable)).to.equal(true)
+            end)
+
+            expect(state.draft.isDraft(nonDraftTable)).to.equal(false)
+        end)
+    end)
+
     describe("state.draft.getRef", function()
         it("should return a draft table's reference", function()
             local baseState = {

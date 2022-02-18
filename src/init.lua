@@ -211,6 +211,9 @@ state.iter = {}
 
 --- state.draft functions
 
+-- returns if the passed value is a draft
+state.draft.isDraft = isDraft
+
 -- returns the reference table of a draft
 state.draft.getRef = function(draft: table): table?
     assert(isDraft(draft), "value is not a draft")

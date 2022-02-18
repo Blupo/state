@@ -87,6 +87,14 @@ end)
 
 results in `{ 1, 2, 3, 4, 5 }` (which is equal to `baseState`).
 
+## state.draft
+
+```
+state.draft: table
+```
+
+Provides functions for working with drafts.
+
 ## state.table
 
 ```
@@ -112,6 +120,24 @@ state.produce(baseState: table, recipe: (draftState: Draft) -> any): table
 ```
 
 Produces a new state. If there are changes, the new state will be fully immutable (or deep-frozen, if that makes more sense), otherwise `baseState` will be returned, which is not guaranteed to be fully immutable.
+
+# state.draft
+
+## state.draft.isDraft
+
+```
+state.draft.isDraft(value: any): boolean
+```
+
+Returns whether the value is a draft or not.
+
+## state.draft.getRef
+
+```
+state.draft.getRef(value: Draft): table
+```
+
+Returns the reference table of a draft.`
 
 # state.table
 
