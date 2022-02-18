@@ -205,8 +205,18 @@ end
 local state = {}
 
 state.undefined = undefined
+state.draft = {}
 state.table = {}
 state.iter = {}
+
+--- state.draft functions
+
+-- returns the reference table of a draft
+state.draft.getRef = function(draft: table): table?
+    assert(isDraft(draft), "value is not a draft")
+
+    return draft[draftRefKey]
+end
 
 --- state.iter functions
 

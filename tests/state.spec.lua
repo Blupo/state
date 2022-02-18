@@ -14,37 +14,39 @@ return function()
         expect(state.undefined).to.be.a("userdata")
     end)
 
-    it("should produce immutable states", function()
-        local baseState = {}
-        local newState
+    describe("state.produce", function()
+        it("should produce immutable states", function()
+            local baseState = {}
+            local newState
 
-        newState = state.produce(baseState, function(draftState)
-            state.table.append(draftState, 1)
+            newState = state.produce(baseState, function(draftState)
+                state.table.append(draftState, 1)
+            end)
+
+            expect(table.isfrozen(newState)).to.equal(true)
         end)
 
-        expect(table.isfrozen(newState)).to.equal(true)
-    end)
+        it("should persist unchanged values", function()
+            local baseState = {
+                A = true,
+                B = false,
+                C = { 1 },
+                D = { { 2 } }
+            }
 
-    it("should persist unchanged values", function()
-        local baseState = {
-            A = true,
-            B = false,
-            C = { 1 },
-            D = { { 2 } }
-        }
+            local newState = state.produce(baseState, function(draftState)
+                draftState.C[1] = 3
+                
+                state.table.append(draftState.D, { 3 })
+            end)
 
-        local newState = state.produce(baseState, function(draftState)
-            draftState.C[1] = 3
-            
-            state.table.append(draftState.D, { 3 })
+            expect(newState).to.never.equal(baseState)
+            expect(newState.A).to.equal(baseState.A)
+            expect(newState.B).to.equal(baseState.B)
+            expect(newState.C).to.never.equal(baseState.C)
+            expect(newState.D).to.never.equal(baseState.D)
+            expect(newState.D[1]).to.equal(baseState.D[1])
         end)
-
-        expect(newState).to.never.equal(baseState)
-        expect(newState.A).to.equal(baseState.A)
-        expect(newState.B).to.equal(baseState.B)
-        expect(newState.C).to.never.equal(baseState.C)
-        expect(newState.D).to.never.equal(baseState.D)
-        expect(newState.D[1]).to.equal(baseState.D[1])
     end)
 
     describe("state.undefined", function()
