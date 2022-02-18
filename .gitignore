@@ -1,0 +1,7 @@
+# Roblox files
+/*.rbxmx
+/*.rbxl
+/*.rbxl.lock
+
+# roblox.toml
+/roblox.toml
