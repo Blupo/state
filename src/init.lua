@@ -118,6 +118,8 @@ local draftProxyMetatable = {
             draftValues[k] = undefined
         elseif (v == undefined) then
             draftValues[k] = nil
+        elseif (isDraftable(v)) then
+            draftValues[k] = draftProxy(v)
         else
             draftValues[k] = v
         end
@@ -131,14 +133,17 @@ draftHasChanges = function(draft: table): boolean
     local draftValues: table = draft[draftValuesKey]
 
     for key, draftValue in pairs(draftValues) do
-        if (isDraft(draftValue)) then
+        local refValue: any = refValues[key]
+
+        if ((refValue == nil) and (draftValue ~= undefined)) then
+            return true
+        elseif (isDraft(draftValue)) then
             local innerDraftHasChanges: boolean = draftHasChanges(draftValue)
 
             if (innerDraftHasChanges) then
                 return true
             end
         else
-            local refValue: any = refValues[key]
             local changed: boolean = (draft[key] ~= refValue)
 
             if (changed) then
@@ -178,8 +183,12 @@ mergeDraft = function(base: table, draft: table): table
         local newStateValue: any = newState[key]
 
         if ((newStateValue == nil) and (draftValue ~= undefined)) then
-            newState[key] = evaluateValue(nil, draftValue)
-        end        
+            if (isDraft(draftValue)) then
+                newState[key] = mergeDraft(draftValue[draftRefKey], draftValue)
+            else
+                newState[key] = evaluateValue(nil, draftValue)
+            end
+        end      
     end
 
     -- enforce immutability
