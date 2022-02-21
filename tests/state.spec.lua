@@ -47,6 +47,74 @@ return function()
             expect(newState.D).to.never.equal(baseState.D)
             expect(newState.D[1]).to.equal(baseState.D[1])
         end)
+
+        it("should merge swapped non-draft values correctly", function()
+            local baseState = {
+                A = 1,
+                B = "2",
+                C = newproxy(false),
+                D = setmetatable({}, {})
+            }
+
+            local newState = state.produce(baseState, function(draftState)
+                draftState.A = 2
+                draftState.B = 3
+                draftState.C = state.undefined
+                draftState.D = setmetatable({}, {})
+            end)
+
+            expect(newState).to.never.equal(baseState)
+            expect(newState.A).to.never.equal(baseState.A)
+            expect(newState.B).to.never.equal(baseState.B)
+            expect(newState.C).to.equal(baseState.C)
+            expect(newState.D).to.never.equal(baseState.D)
+        end)
+
+        it("should merge swapped tables correctly", function()
+            local baseState = {
+                C = { 3 },
+                D = { 4 },
+            }
+
+            local newState = state.produce(baseState, function(draftState)
+                draftState.C, draftState.D = draftState.D, draftState.C
+            end)
+
+            expect(newState).to.never.equal(baseState)
+            expect(newState.C).to.equal(baseState.D)
+            expect(newState.D).to.equal(baseState.C)
+
+            ---
+
+            local baseState2 = {}
+
+            local newState2 = state.produce(baseState2, function(draftState)
+                draftState.C = { 3 }
+                draftState.D = { 4 }
+
+                draftState.C, draftState.D = draftState.D, draftState.C
+            end)
+
+            expect(newState2).to.never.equal(baseState2)
+            expect(newState2.C[1]).to.equal(4)
+            expect(newState2.D[1]).to.equal(3)
+        end)
+
+        it("should merge non-draft tables correctly", function()
+            local baseState = {
+                D = { 2 },
+            }
+
+            local three = { 3 }
+
+            local newState = state.produce(baseState, function(draftState)
+                draftState.D = three
+            end)
+
+            expect(newState).to.never.equal(baseState)
+            expect(newState.D).to.never.equal(baseState.D)
+            expect(newState.D).to.equal(three)
+        end)
     end)
 
     describe("state.undefined", function()

@@ -118,8 +118,6 @@ local draftProxyMetatable = {
             draftValues[k] = undefined
         elseif (v == undefined) then
             draftValues[k] = nil
-        elseif (isDraftable(v)) then
-            draftValues[k] = draftProxy(v)
         else
             draftValues[k] = v
         end
@@ -142,6 +140,10 @@ draftHasChanges = function(draft: table): boolean
 
             if (innerDraftHasChanges) then
                 return true
+            else
+                if (draftValue[draftRefKey] ~= refValues[key]) then
+                    return true
+                end
             end
         else
             local changed: boolean = (draft[key] ~= refValue)

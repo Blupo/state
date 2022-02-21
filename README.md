@@ -1,8 +1,8 @@
 # state
 
-The purpose of this library is similar to [immer](https://github.com/immerjs/immer): to create the next state by modifying the current one. This module was specifically created to reduce the need to repeatedly deep-copy Rodux state for making changes.
+The purpose of this library is similar to [immer](https://github.com/immerjs/immer): to create the next state by modifying the current one. This module was specifically created for making managing Rodux state for the [ColorPane](https://github.com/Blupo/ColorPane) plugin easier.
 
-Due to the numerous compromises needed to make table operations work correctly when using draft states (see [state.table](#statetable) and [state.iter](#stateiter)), this module isn't fit for widespread use. You're free to use it, though, if it suits your needs and you're willing to deal with the compromises.
+Due to the numerous compromises needed to make table operations work correctly when using draft states (see [state.table](#statetable) and [state.iter](#stateiter)), this module isn't fit for widespread use. You're free to use it, though, if it suits your needs and you're willing to deal with the compromises. There's also probably going to be some bugs.
 
 ## Example
 
