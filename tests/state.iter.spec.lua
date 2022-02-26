@@ -99,6 +99,29 @@ return function()
                 expect(t2[k]).to.equal(v)
             end
         end)
+
+        it("should handle setting values to nil correctly", function()
+            local t = {
+                A = 1,
+                B = 2,
+                C = 3,
+                D = 4,
+            }
+
+            t.E = 5
+            t.F = 7
+
+            for k in state.iter.pairs(t) do
+                t[k] = nil
+            end
+
+            expect(t.A).to.equal(nil)
+            expect(t.B).to.equal(nil)
+            expect(t.C).to.equal(nil)
+            expect(t.D).to.equal(nil)
+            expect(t.E).to.equal(nil)
+            expect(t.F).to.equal(nil)
+        end)
     end)
 
     describe("state.iter.ipairs", function()

@@ -115,6 +115,22 @@ return function()
             expect(newState.D).to.never.equal(baseState.D)
             expect(newState.D).to.equal(three)
         end)
+
+        it("should freeze drafts after recipe", function()
+            local baseState = {}
+            local draft
+
+            state.produce(baseState, function(draftState)
+                draft = draftState
+            end)
+
+            expect(state.draft.isDraft(draft)).to.equal(true)
+            expect(table.isfrozen(draft)).to.equal(true)
+
+            expect(function()
+                state.table.append(draft, 1)
+            end).to.throw()
+        end)
     end)
 
     describe("state.undefined", function()

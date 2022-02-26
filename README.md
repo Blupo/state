@@ -103,7 +103,7 @@ state.table: table
 
 Provides table functions that work with draft tables. Due to the way drafts work, many table operations (besides indexing and setting) do not work correctly.
 
-These functions will also work with non-draft tables, and replicate their original behaviour.
+These functions will also work with non-draft tables, and use their original behaviours.
 
 ## state.iter
 
@@ -119,7 +119,7 @@ Provides iterator functions that work with draft tables (as well as non-draft ta
 state.produce(baseState: table, recipe: (draftState: Draft) -> any): table
 ```
 
-Produces a new state. If there are changes, the new state will be fully immutable (or deep-frozen, if that makes more sense), otherwise `baseState` will be returned, which is not guaranteed to be fully immutable.
+Produces a new, immutable state, or returns `baseState` if there were no changes. If there are any tables in state that are not modified, then they will be transferred to the new state. Otherwise, those modifications will generate a new, immutable table.
 
 # state.draft
 
@@ -137,7 +137,15 @@ Returns whether the value is a draft or not.
 state.draft.getRef(value: Draft): table
 ```
 
-Returns the reference table of a draft.`
+Returns the reference table of a draft.
+
+## state.draft.getState
+
+```
+state.draft.getState(value: Draft): table
+```
+
+Returns the current state of a draft. Unlike `state.produce`, modified state will not be immutable. If you know that the draft hasn't been modified, you should use `state.draft.getRef` to avoid the overhead of checking for changes.
 
 # state.table
 
@@ -155,14 +163,12 @@ Similar to the 2-arugment `table.insert` function. Use [`state.table.insert`](#s
 state.table.getn(t: table | Draft): number
 ```
 
-Similar to `table.getn` or the length operator (`#`). There is a (probably-not-important) caveat to how this function work versus the normal `table.getn` or `#` operator.
+Similar to `table.getn` or the length operator (`#`). There is a caveat to how this function work versus the normal `table.getn` or `#` operator.
 
 <details>
 <summary>Caveat</summary>
 
-The length operator and `table.getn` have undefined behaviour for tables with holes, however `state.table.getn` will return the length of the table before the first hole.
-
-This is similar to how the length would be calculated if you used `ipairs` to iterate over the list and returned the last index.
+The length operator and `table.getn` have undefined behaviour for tables with holes, however `state.table.getn` will return the length of the table before the first hole. This is how the length would be calculated if you used `ipairs` to iterate over the list and returned the last index accessed.
 
 ```
 local t = { 1, 2, nil, 4 }
@@ -173,8 +179,10 @@ state.produce(t, function(draftState))
     print(state.table.getn(draftState)) --> 2
 end
 
-print(state.table.getn(t)) --> 4 (t is not a draft table)
+print(state.table.getn(t)) --> 4, probably
 ```
+
+(The last line prints out 4 because calling `state.table.getn` on a non-draft table uses default behaviour.)
 
 As such, this makes `state.table.insert`, `state.table.append`, and `state.table.remove` non-equivalent to their `table` counterparts.
 </details>
@@ -212,3 +220,29 @@ state.iter.ipairs(t: array | Draft): ((array | Draft, number) -> (number?, any?)
 ```
 
 Equivalent to `ipairs`.
+
+# Warnings
+
+- Keys with the same table reference will have unique drafts. Consider the following code:
+
+    ```lua
+    local a = { 1 }
+
+    local baseState = {
+        A = a,
+
+        B = {
+            A = a,
+        }
+    }
+
+    local newState = state.produce(baseState, function(draftState)
+        state.table.append(draftState.A, 2)
+    end)
+    ```
+
+    `newState.A` will render as `{ 1, 2 }`, however `newState.B.A` will still be `{ 1 }` (and equal to `a`).
+
+- Passing around drafts results in unique outputs. In the same vein as the previous point, setting multiple keys to the same draft value will not result in those keys sharing a single output table.
+    - Drafts are supposed to be unique for every table-key pair, so you shouldn't be passing them around anyway.
+- Do not put drafts inside of non-draft tables. If you need to transfer the value of a draft table to a non-draft table, you can use `state.draft.getOriginal` or `state.draft.getCurrent` (depending on if you know that the draft hasn't been modified or not).

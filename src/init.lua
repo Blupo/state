@@ -6,7 +6,8 @@ type array = {[number]: any}
 
 local undefined: userdata = newproxy(true)
 local draftRefKey: userdata = newproxy(false)
-local draftValuesKey = newproxy(false)
+local draftValuesKey: userdata = newproxy(false)
+local freezeDraftInvoker: userdata = newproxy(false)
 
 -- lazy init functions
 local draftProxy
@@ -90,8 +91,10 @@ end
 
 local draftProxyMetatable = {
     __index = function(t: table, k: any): any?
+        local draftValues: table = t[draftValuesKey]
+
         local refValue: any = t[draftRefKey][k]
-        local draftValue: any = t[draftValuesKey][k]
+        local draftValue: any = draftValues[k]
 
         if (draftValue ~= nil) then
             if (draftValue == undefined) then
@@ -104,7 +107,7 @@ local draftProxyMetatable = {
                 return refValue
             else
                 local newDraft: table = draftProxy(refValue)
-                t[draftValuesKey][k] = newDraft
+                draftValues[k] = newDraft
 
                 return newDraft
             end
@@ -118,6 +121,8 @@ local draftProxyMetatable = {
             draftValues[k] = undefined
         elseif (v == undefined) then
             draftValues[k] = nil
+        elseif (isDraftable(v)) then
+            draftValues[k] = draftProxy(v)
         else
             draftValues[k] = v
         end
@@ -157,7 +162,7 @@ draftHasChanges = function(draft: table): boolean
     return false
 end
 
-mergeDraft = function(base: table, draft: table): table
+mergeDraft = function(base: table, draft: table, noFreeze: boolean?): table
     if (not draftHasChanges(draft)) then return base end
 
     local draftValues: table = draft[draftValuesKey]
@@ -193,14 +198,30 @@ mergeDraft = function(base: table, draft: table): table
         end      
     end
 
-    -- enforce immutability
-    return table.freeze(newState)
+    if (noFreeze) then
+        return newState
+    else
+        return table.freeze(newState)
+    end
 end
 
 draftProxy = function(ref: table)
-    local draft: table = {
+    local draft: table
+    
+    draft = {
         [draftRefKey] = ref,
-        [draftValuesKey] = {}
+        [draftValuesKey] = {},
+
+        [freezeDraftInvoker] = function()
+            table.freeze(draft)
+            table.freeze(draft[draftValuesKey])
+
+            for _, draftValue in pairs(draft[draftValuesKey]) do
+                if (isDraft(draftValue)) then
+                    draftValue[freezeDraftInvoker]()
+                end
+            end
+        end,
     }
 
     setmetatable(draft, draftProxyMetatable)
@@ -225,11 +246,18 @@ state.iter = {}
 -- returns if the passed value is a draft
 state.draft.isDraft = isDraft
 
--- returns the reference table of a draft
+-- returns the reference of a draft
 state.draft.getRef = function(draft: table): table?
     assert(isDraft(draft), "value is not a draft")
 
     return draft[draftRefKey]
+end
+
+-- returns the state of a draft
+state.draft.getState = function(draft: table): table?
+    assert(isDraft(draft), "value is not a draft")
+
+    return mergeDraft(draft[draftRefKey], draft, true)
 end
 
 --- state.iter functions
@@ -325,7 +353,9 @@ state.produce = function(baseState: table, recipe: (table) -> any?): table
     end
 
     local draftState = draftProxy(baseState)
+
     recipe(draftState)
+    draftState[freezeDraftInvoker]()
 
     return mergeDraft(baseState, draftState)
 end
